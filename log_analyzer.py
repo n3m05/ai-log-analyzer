@@ -4,6 +4,9 @@ from collections import defaultdict
 
 LOG_FILE = "auth.log"
 
+FAIL_THRESHOLD = 5
+TIME_WINDOW_MINUTES = 5
+
 def parse_log_line(line):
     try:
         parts = line.strip().split()
@@ -24,6 +27,32 @@ def load_logs(file_path):
                 events.append(parsed)
     return events
 
+def detect_bruteforce(events):
+    alerts = []
+    user_failures = defaultdict(list)
+
+    for ts, user, ip, status in events:
+        if status == "FAIL":
+            user_failures[(user, ip)].append(ts)
+
+    for key, timestamps in user_failures.items():
+        timestamps.sort()
+        for i in range(len(timestamps)):
+            window = [
+                t for t in timestamps
+                if 0 <= (t - timestamps[i]).total_seconds() <= TIME_WINDOW_MINUTES * 60
+            ]
+            if len(window) >= FAIL_THRESHOLD:
+                alerts.append(
+                    f"[BRUTEFORCE] user={key[0]} ip={key[1]} failures={len(window)}"
+                )
+                break
+    return alerts
+
 if __name__ == "__main__":
     events = load_logs(LOG_FILE)
-    print(events[:5])  # Show first 5 events for testing
+    alerts = detect_bruteforce(events)
+    print(alerts)
+
+
+
