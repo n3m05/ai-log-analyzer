@@ -6,6 +6,8 @@ LOG_FILE = "auth.log"
 
 FAIL_THRESHOLD = 5
 TIME_WINDOW_MINUTES = 5
+AFTER_HOURS_START = 22
+AFTER_HOURS_END = 5
 
 def parse_log_line(line):
     try:
@@ -49,10 +51,23 @@ def detect_bruteforce(events):
                 break
     return alerts
 
+def detect_after_hours(events):
+    alerts = []
+    for ts, user, ip, status in events:
+        if status == "SUCCESS":
+            hour = ts.hour
+            if hour >= AFTER_HOURS_START or hour <= AFTER_HOURS_END:
+                alerts.append(
+                    f"[AFTER HOURS LOGIN] user={user} ip={ip} time={ts}"
+                )
+    return alerts
+
 if __name__ == "__main__":
     events = load_logs(LOG_FILE)
     alerts = detect_bruteforce(events)
+    alerts.extend(detect_after_hours(events))
     print(alerts)
+
 
 
 
