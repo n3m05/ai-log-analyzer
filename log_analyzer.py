@@ -62,11 +62,26 @@ def detect_after_hours(events):
                 )
     return alerts
 
+def detect_new_ip(events):
+    alerts = []
+    user_ips = defaultdict(set)
+
+    for ts, user, ip, status in events:
+        if status == "SUCCESS":
+            if ip not in user_ips[user] and len(user_ips[user]) > 0:
+                alerts.append(
+                    f"[NEW IP LOGIN] user={user} new_ip={ip}"
+                )
+            user_ips[user].add(ip)
+    return alerts
+
 if __name__ == "__main__":
     events = load_logs(LOG_FILE)
     alerts = detect_bruteforce(events)
     alerts.extend(detect_after_hours(events))
+    alerts.extend(detect_new_ip(events))
     print(alerts)
+
 
 
 
