@@ -1,2 +1,11 @@
-*.pyc
+# Python cache
 __pycache__/
+*.pyc
+*.pyo
+
+# Logs
+*.log
+
+# Environment files
+.env
+
