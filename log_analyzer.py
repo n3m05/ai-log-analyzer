@@ -75,9 +75,7 @@ def detect_new_ip(events):
             user_ips[user].add(ip)
     return alerts
 
-if __name__ == "__main__":
-    events = load_logs(LOG_FILE)
-    aldef detect_impossible_travel(events):
+def detect_impossible_travel(events):
     alerts = []
     user_logins = defaultdict(list)
 
@@ -112,11 +110,6 @@ if __name__ == "__main__":
             print(alert)
     else:
         print("No suspicious activity detected.")
-erts = detect_bruteforce(events)
-    alerts.extend(detect_after_hours(events))
-    alerts.extend(detect_new_ip(events))
-    print(alerts)
-
 
 
 
