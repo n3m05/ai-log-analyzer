@@ -1,15 +1,20 @@
-# log_analyzer.py
 import datetime
 from collections import defaultdict
 
-LOG_FILE = "auth.log"
-
+# Config
+LOG_FILE = "example_auth.log"
 FAIL_THRESHOLD = 5
 TIME_WINDOW_MINUTES = 5
 AFTER_HOURS_START = 22
 AFTER_HOURS_END = 5
 
+
+# ---- Log Parsing ----
 def parse_log_line(line):
+    """
+    Parses a single log line into structured data.
+    Returns: timestamp, user, ip, status or None on parse error
+    """
     try:
         parts = line.strip().split()
         timestamp = datetime.datetime.fromisoformat(parts[0])
@@ -20,7 +25,9 @@ def parse_log_line(line):
     except Exception:
         return None
 
+
 def load_logs(file_path):
+    """Load all log lines and parse them into structured events"""
     events = []
     with open(file_path, "r") as f:
         for line in f:
@@ -29,10 +36,11 @@ def load_logs(file_path):
                 events.append(parsed)
     return events
 
+
+# ---- Detection Modules ----
 def detect_bruteforce(events):
     alerts = []
     user_failures = defaultdict(list)
-
     for ts, user, ip, status in events:
         if status == "FAIL":
             user_failures[(user, ip)].append(ts)
@@ -51,6 +59,7 @@ def detect_bruteforce(events):
                 break
     return alerts
 
+
 def detect_after_hours(events):
     alerts = []
     for ts, user, ip, status in events:
@@ -62,10 +71,10 @@ def detect_after_hours(events):
                 )
     return alerts
 
+
 def detect_new_ip(events):
     alerts = []
     user_ips = defaultdict(set)
-
     for ts, user, ip, status in events:
         if status == "SUCCESS":
             if ip not in user_ips[user] and len(user_ips[user]) > 0:
@@ -75,10 +84,10 @@ def detect_new_ip(events):
             user_ips[user].add(ip)
     return alerts
 
+
 def detect_impossible_travel(events):
     alerts = []
     user_logins = defaultdict(list)
-
     for ts, user, ip, status in events:
         if status == "SUCCESS":
             user_logins[user].append((ts, ip))
@@ -96,13 +105,20 @@ def detect_impossible_travel(events):
                     )
     return alerts
 
-if __name__ == "__main__":
-    events = load_logs(LOG_FILE)
+
+# ---- Main Runner ----
+def run_detection(events):
     alerts = []
     alerts.extend(detect_bruteforce(events))
     alerts.extend(detect_after_hours(events))
     alerts.extend(detect_new_ip(events))
     alerts.extend(detect_impossible_travel(events))
+    return alerts
+
+
+def main():
+    events = load_logs(LOG_FILE)
+    alerts = run_detection(events)
 
     if alerts:
         print("=== SECURITY ALERTS ===")
@@ -112,5 +128,5 @@ if __name__ == "__main__":
         print("No suspicious activity detected.")
 
 
-
-
+if __name__ == "__main__":
+    main()
